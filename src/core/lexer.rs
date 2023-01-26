@@ -54,7 +54,38 @@ impl<'a> Iterator for Lexer<'a> {
             Some('^') => Some(Token::CARET),
             Some('(') => Some(Token::LPAREN),
             Some(')') => Some(Token::RPAREN),
+            Some('{') => Some(Token::LBRACE),
+            Some('}') => Some(Token::RBRACE),
+            Some('[') => Some(Token::LBRACKET),
+            Some(']') => Some(Token::RBRACKET),
+            Some(':') => Some(Token::COLON),
+            Some(',') => Some(Token::COMMA),
+            Some(';') => Some(Token::SEMICOLON),
+            Some('>') => Some(Token::GT),
+            Some('<') => Some(Token::LT),
             None => None, 
+            Some('=') => {
+                // 如果后面跟的是等号，就返回EQ 否则返回赋值号
+                if let Some(next_char) = self.expr.peek() {
+                    if next_char == &'=' {
+                        // 往后读一位
+                        self.expr.next();
+                        return Some(Token::EQ) 
+                    }
+                }
+                Some(Token::ASSIGN)
+            },
+            Some('!') => {
+                // 如果后面跟的是等号，就返回NOT_EQ 否则返回感叹号
+                if let Some(next_char) = self.expr.peek() {
+                    if next_char == &'=' {
+                        // 往后读一位
+                        self.expr.next();
+                        return Some(Token::NOT_EQ) 
+                    }
+                }
+                Some(Token::EXCLAMATION)
+            }
             Some(_) => {
                 if next_char?.is_alphabetic() {
                     let mut identifier = next_char?.to_string();
@@ -104,5 +135,32 @@ mod tests {
         for expect in expects {
             assert_eq!(lexer.next().unwrap(), expect);
         }
+    }
+    
+    #[test]
+    fn special_character_test() {
+        let mut lexer = Lexer::new("=+(){}[],;*/!<>^");
+        let expects = [
+            Token::ASSIGN,
+            Token::PLUS,
+            Token::LPAREN,
+            Token::RPAREN,
+            Token::LBRACE,
+            Token::RBRACE,
+            Token::LBRACKET,
+            Token::RBRACKET,
+            Token::COMMA,
+            Token::SEMICOLON,
+            Token::ASTERISK,
+            Token::SLASH,
+            Token::EXCLAMATION,
+            Token::LT,
+            Token::GT,
+            Token::CARET
+        ];
+        for expect in expects {
+            assert_eq!(lexer.next().unwrap(), expect);
+        }
+        
     }
 }
