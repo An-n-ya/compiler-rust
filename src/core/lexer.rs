@@ -113,8 +113,8 @@ mod tests {
 
     #[test]
     fn whitespace_test() {
-        let mut lexer = Lexer::new("   1+2");
-        let expects = [Token::NUMBER(1.0), Token::PLUS, Token::NUMBER(2.0)];
+        let mut lexer = Lexer::new("   1.1+2");
+        let expects = [Token::NUMBER(1.1), Token::PLUS, Token::NUMBER(2.0)];
         for expect in expects {
             assert_eq!(lexer.next().unwrap(), expect);
         }
