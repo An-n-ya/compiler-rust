@@ -13,12 +13,20 @@ impl<'a> Lexer<'a> {
     }
     
     fn skip_whitespace(&mut self) {
-        if self.expr.peek() == None {
-            return
-        }
         let whitespace = " \t\n\r";
-        while whitespace.contains(*self.expr.peek().unwrap()) {
-            self.expr.next();        
+        loop {
+            // 一直找空格
+            match self.expr.peek() {
+                None => return,
+                Some(n) => {
+                    if whitespace.contains(*n) {
+                        self.expr.next();
+                    } else {
+                        return;
+                    }
+                }
+            }
+            
         }
     }
 }
