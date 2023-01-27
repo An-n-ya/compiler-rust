@@ -163,4 +163,80 @@ mod tests {
         }
         
     }
+    
+    #[test]
+    fn real_case_test() {
+        let mut lexer = Lexer::new("let five = 5;
+        let ten = 10;
+        let add = fn(x,y) {
+            x + y;
+        };
+
+        let result = add(five, ten)
+        
+        if (ten != five) {
+            return true;
+        } else {
+            return false;
+        }");
+        let expects = [
+            Token::LET,
+            Token::IDENT("five".to_string()),
+            Token::ASSIGN,
+            Token::NUMBER(5.0),
+            Token::SEMICOLON,
+            Token::LET,
+            Token::IDENT("ten".to_string()),
+            Token::ASSIGN,
+            Token::NUMBER(10.0),
+            Token::SEMICOLON,
+            Token::LET,
+            Token::IDENT("add".to_string()),
+            Token::ASSIGN,
+            Token::FUNCTION,
+            Token::LPAREN,
+            Token::IDENT("x".to_string()),
+            Token::COMMA,
+            Token::IDENT("y".to_string()),
+            Token::RPAREN,
+            Token::LBRACE,
+            Token::IDENT("x".to_string()),
+            Token::PLUS,
+            Token::IDENT("y".to_string()),
+            Token::SEMICOLON,
+            Token::RBRACE,
+            Token::SEMICOLON,
+            Token::LET,
+            Token::IDENT("result".to_string()),
+            Token::ASSIGN,
+            Token::IDENT("add".to_string()),
+            Token::LPAREN,
+            Token::IDENT("five".to_string()),
+            Token::COMMA,
+            Token::IDENT("ten".to_string()),
+            Token::RPAREN,
+            Token::IF,
+            Token::LPAREN,
+            Token::IDENT("ten".to_string()),
+            Token::NOT_EQ,
+            Token::IDENT("five".to_string()),
+            Token::RPAREN,
+            Token::LBRACE,
+            Token::RETURN,
+            Token::TRUE,
+            Token::SEMICOLON,
+            Token::RBRACE,
+            Token::ELSE,
+            Token::LBRACE,
+            Token::RETURN,
+            Token::FALSE,
+            Token::SEMICOLON,
+            Token::RBRACE,
+        ];
+        print!("{:?}", expects);
+        for expect in expects.iter() {
+            print!("{:?}", *expect);
+            assert_eq!(lexer.next().unwrap(), *expect);
+        }
+    }
 }
