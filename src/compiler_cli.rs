@@ -23,6 +23,7 @@ fn main() {
         // 如果没有带参数，暂时报错
         // FIXME 默认行为是求值
         print_help_msg();
+        return;
     }
     
     match args[1].as_str() {
@@ -39,7 +40,7 @@ fn lexer_begin() {
         // 因为效率问题，rust的stdout默认使用缓存
         // 这会导致stdin完成后才会统一输出(将两次输出合并为一次)
         // 我们需要在每次输入前打印出promt，所以这里需要刷新stdout
-        let _ =io::stdout().flush();
+        let _ = io::stdout().flush();
         match io::stdin().read_line(&mut in_buf) {
             Ok(_) => {
                 let lexer = Lexer::new(&in_buf);
