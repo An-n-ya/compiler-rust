@@ -35,7 +35,7 @@ fn main() {
 fn lexer_begin() {
     let mut in_buf = "".to_string();
     loop {
-        // 进入无线循环，持续解析每个输入
+        // 进入无限循环，持续解析每个输入
         print!("{PROMPT}");
         // 因为效率问题，rust的stdout默认使用缓存
         // 这会导致stdin完成后才会统一输出(将两次输出合并为一次)
