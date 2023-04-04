@@ -13,18 +13,17 @@ use std::sync::Arc;
 
 pub struct Parser<'a>{
     lexer: Peekable<Lexer<'a>>,
-    current_token: TokenType,
-    current_line: i32,
-    current_value: String
+    current_token: Token
 }
 
 impl<'a> Parser<'a> {
+    // 这里不要直接传Lexer，而是传一个字符串，然后在构造函数里面创建Lexer
+    // 如果直接传Lexer会有生命周期问题
     pub fn new(lexer: &'a str) -> Self {
         Self {
             lexer: Lexer::new(lexer).peekable(),
-            current_token: TokenType::EOF,
-            current_line: 0,
-            current_value: "none".to_string()
+            // 初始化current_token为ILLEGAL，这样在parse的时候就不用检查lexer是否为空了
+            current_token: Token::new(TokenType::ILLEGAL, "".to_string(), 0),
         }
     }
     
@@ -40,9 +39,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.lexer.peek() {
             if token.token_type == token_type {
                 // 检查下一个token是否是token_type，如果是的话，就消费它并返回true，否则返回false
-                self.current_token = token.token_type;
-                self.current_line = token.line;
-                self.current_value = token.lexeme.clone();
+                self.current_token = token.clone();
                 self.lexer.next();
                 true
             } else {
@@ -61,9 +58,8 @@ impl<'a> Parser<'a> {
         let mut expr = self.comparison();
         
         while self.match_token(TokenType::NOT_EQ) || self.match_token(TokenType::EQ) {
-            let op = Token::new(self.current_token, self.current_token.to_string(), self.current_line);
             let right = self.comparison();
-            expr = Box::new(Binary::new(expr, op, right));
+            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
         }
 
         expr
@@ -74,9 +70,8 @@ impl<'a> Parser<'a> {
         
         while self.match_token(TokenType::GT) || self.match_token(TokenType::LT)
             || self.match_token(TokenType::GE) || self.match_token(TokenType::LE) {
-            let op = Token::new(self.current_token, self.current_token.to_string(), self.current_line);
             let right = self.addition();
-            expr = Box::new(Binary::new(expr, op, right));
+            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
         }
 
         expr        
@@ -86,9 +81,8 @@ impl<'a> Parser<'a> {
         let mut expr = self.multiplication();
         
         while self.match_token(TokenType::MINUS) || self.match_token(TokenType::PLUS) {
-            let op = Token::new(self.current_token, self.current_token.to_string(), self.current_line);
             let right = self.multiplication();
-            expr = Box::new(Binary::new(expr, op, right));
+            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
         }
 
         expr
@@ -98,9 +92,8 @@ impl<'a> Parser<'a> {
         let mut expr = self.unary();
 
         while self.match_token(TokenType::ASTERISK) || self.match_token(TokenType::SLASH) {
-            let op = Token::new(self.current_token, self.current_token.to_string(), self.current_line);
             let right = self.unary();
-            expr = Box::new(Binary::new(expr, op, right));
+            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
         }
 
         expr
@@ -108,9 +101,8 @@ impl<'a> Parser<'a> {
     
     fn unary(&mut self) -> Box<dyn Expr<String>> {
         if self.match_token(TokenType::MINUS) || self.match_token(TokenType::EXCLAMATION) {
-            let op = Token::new(self.current_token, self.current_token.to_string(), self.current_line);
             let right = self.unary();
-            Box::new(Unary::new(op, right))
+            Box::new(Unary::new(self.current_token.clone(), right))
         } else {
             self.primary()
         }
@@ -122,7 +114,7 @@ impl<'a> Parser<'a> {
         || self.match_token(TokenType::NULL)
         || self.match_token(TokenType::NUMBER)
         || self.match_token(TokenType::STRING) {
-            Box::new(Literal::new(Box::new(self.current_value.clone())))
+            Box::new(Literal::new(Box::new(self.current_token.lexeme.clone())))
         } else if self.match_token(TokenType::LPAREN) {
             let expr = self.expression();
             self.match_token(TokenType::RPAREN);
