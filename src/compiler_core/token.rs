@@ -1,4 +1,5 @@
 use std::{collections::HashMap, fmt, any::Any};
+use std::rc::Rc;
 
 
 // lazy_static! {
@@ -65,11 +66,10 @@ pub enum TokenType {
     NULL,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: Box<dyn Any>,
     pub line: i32
 }
 
@@ -78,20 +78,10 @@ impl Token {
         Self {
             token_type,
             lexeme: lexeme.clone(),
-            literal: Box::new(lexeme.clone()),
             line
         }
     }
     
-    pub fn new_with_literal(token_type: TokenType, lexeme: String,
-        literal: Box<dyn Any>, line: i32) -> Self {
-        Self {
-            token_type,
-            lexeme,
-            literal,
-            line
-        }
-    }
 }
 
 impl fmt::Display for Token {
@@ -103,32 +93,6 @@ impl fmt::Display for Token {
 impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl PartialEq for Token {
-    fn eq(&self, other: &Self) -> bool {
-        self.token_type == other.token_type
-        && self.lexeme == other.lexeme
-        && self.line == other.line
-        && (
-            // 字面量只有两种情况：String和f64
-            if let Some(literal) = self.literal.downcast_ref::<String>() {
-                if let Some(other_literal) = other.literal.downcast_ref::<String>() {
-                    literal == other_literal
-                } else {
-                    false
-                }
-            } else if let Some(literal) = self.literal.downcast_ref::<f64>() {
-                if let Some(other_literal) = other.literal.downcast_ref::<f64>() {
-                    literal == other_literal
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        )
     }
 }
 

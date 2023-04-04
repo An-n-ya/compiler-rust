@@ -1,26 +1,27 @@
 use std::any::Any;
+use std::rc::Rc;
 
 use super::token::Token;
 
-pub(crate) trait Expr<T> {
+pub trait Expr<T> {
     fn accept(&self, visitor: &mut dyn Visitor<T>) -> T;
 }
 
-pub(crate) struct Binary<R> {
+pub struct Binary<R> {
     pub left: Box<dyn Expr<R>>,
     pub op: Token,
     pub right: Box<dyn Expr<R>>,
 }
 
-pub(crate) struct Grouping<R> {
+pub struct Grouping<R> {
     pub expr: Box<dyn Expr<R>>
 }
 
-pub(crate) struct Literal {
+pub struct Literal {
     pub value: Box<dyn Any>
 }
 
-pub(crate) struct Unary<R> {
+pub struct Unary<R> {
     pub op: Token,
     pub right: Box<dyn Expr<R>>
 }
@@ -81,7 +82,7 @@ impl<R> Expr<R> for Unary<R> {
     }
 }
 
-pub(crate) trait Visitor<T> {
+pub trait Visitor<T> {
     fn visit_binary(&mut self, t: &Binary<T>) -> T;    
     fn visit_grouping(&mut self, t: &Grouping<T>) -> T;    
     fn visit_literal(&mut self, t: &Literal) -> T;    

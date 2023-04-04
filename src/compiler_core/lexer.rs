@@ -3,17 +3,22 @@ use std::str::Chars;
 use super::token::TokenType;
 use super::token::Token;
 use super::token::loopkup_ident;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::ops::Deref;
 
+#[derive(Debug, Clone)]
 pub struct Lexer<'a> {
     expr: Peekable<Chars<'a>>,
     line: i32,
 }
 
+
 impl<'a> Lexer<'a> {
     pub fn new(new_expr: &'a str) -> Self {
         Lexer { expr: new_expr.chars().peekable(), line: 1 }
     }
-    
+
     fn expected(&mut self, expected: char) -> bool {
         match self.expr.peek() {
             Some(&actual) if actual == expected => {
@@ -23,6 +28,7 @@ impl<'a> Lexer<'a> {
             _ => false
         }
     }
+
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -128,10 +134,9 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 // 跳过下一个双引号
                 self.expr.next();
-                Some(Token::new_with_literal(
+                Some(Token::new(
                         TokenType::STRING,
                         string.clone(),
-                        Box::new(string.clone()),
                         self.line))
             },
             Some('0'..='9') => {
@@ -160,10 +165,9 @@ impl<'a> Iterator for Lexer<'a> {
 
 
                 // 返回数字
-                Some(Token::new_with_literal(
+                Some(Token::new(
                         TokenType::NUMBER,
                         number.clone(),
-                        Box::new(number.parse::<f64>().unwrap()),
                         self.line))
             },
             Some(_) => {
@@ -184,8 +188,20 @@ impl<'a> Iterator for Lexer<'a> {
                 }
             }
         }
+       
     }
 }
+
+
+// pub struct CloneableLexer<'a>(Rc<RefCell<Lexer + 'a>>);
+
+// impl<'a> Iterator for CloneableLexer<'a> {
+//     type Item = Token;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.0.next()
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -258,12 +274,12 @@ mod tests {
             Token::new(TokenType::LET, "LET".to_string(), 1),
             Token::new(TokenType::IDENT, "five".to_string(), 1),
             Token::new(TokenType::ASSIGN, "=".to_string(), 1),
-            Token::new_with_literal(TokenType::NUMBER, "5".to_string(), Box::new(5_f64), 1),
+            Token::new(TokenType::NUMBER, "5".to_string(), 1),
             Token::new(TokenType::SEMICOLON, ";".to_string(), 1),
             Token::new(TokenType::LET, "LET".to_string(), 2),
             Token::new(TokenType::IDENT, "ten".to_string(), 2),
             Token::new(TokenType::ASSIGN, "=".to_string(), 2),
-            Token::new_with_literal(TokenType::NUMBER, "10".to_string(), Box::new(10_f64), 2),
+            Token::new(TokenType::NUMBER, "10".to_string(), 2),
             Token::new(TokenType::SEMICOLON, ";".to_string(), 2),
             Token::new(TokenType::LET, "LET".to_string(), 3),
             Token::new(TokenType::IDENT, "add".to_string(), 3),
