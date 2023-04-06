@@ -6,10 +6,7 @@ use super::expr::Grouping;
 use super::lexer::Lexer;
 use super::token::TokenType;
 use super::token::Token;
-use std::any::Any;
 use std::iter::Peekable;
-use std::rc::Rc;
-use std::sync::Arc;
 
 macro_rules! error {
     ($($arg:tt)*) => {
@@ -60,10 +57,16 @@ impl<'a> Parser<'a> {
     
     // 消费当前token，如果当前token不是token_type，就panic
     fn consume(&mut self, token_type: TokenType, message: &str) {
-        if self.current_token.token_type == token_type {
-            self.lexer.next();
+        if let Some(token) = self.lexer.peek() {
+            if token.token_type == token_type {
+                self.current_token = token.clone();
+                // 这里不能用next
+                return;
+            } else {
+                error!("line {}: at token \"{}\", {}", token.line, token.lexeme, message);
+            }
         } else {
-            error!("line {}: at {} line {}", self.current_token.line, self.current_token.lexeme, message);
+            error!("Token Expected!");
         }
     }
     
@@ -104,8 +107,10 @@ impl<'a> Parser<'a> {
         let mut expr = self.comparison();
         
         while self.match_token(TokenType::NOT_EQ) || self.match_token(TokenType::EQ) {
+            // 由于comparison中会顶替掉current_token， 需要先保存当前token 
+            let op = self.current_token.clone();
             let right = self.comparison();
-            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
+            expr = Box::new(Binary::new(expr, op.clone(), right));
         }
 
         expr
@@ -116,8 +121,9 @@ impl<'a> Parser<'a> {
         
         while self.match_token(TokenType::GT) || self.match_token(TokenType::LT)
             || self.match_token(TokenType::GE) || self.match_token(TokenType::LE) {
+            let op = self.current_token.clone();
             let right = self.addition();
-            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
+            expr = Box::new(Binary::new(expr, op.clone(), right));
         }
 
         expr        
@@ -127,8 +133,9 @@ impl<'a> Parser<'a> {
         let mut expr = self.multiplication();
         
         while self.match_token(TokenType::MINUS) || self.match_token(TokenType::PLUS) {
+            let op = self.current_token.clone();
             let right = self.multiplication();
-            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
+            expr = Box::new(Binary::new(expr, op.clone(), right));
         }
 
         expr
@@ -138,8 +145,9 @@ impl<'a> Parser<'a> {
         let mut expr = self.unary();
 
         while self.match_token(TokenType::ASTERISK) || self.match_token(TokenType::SLASH) {
+            let op = self.current_token.clone();
             let right = self.unary();
-            expr = Box::new(Binary::new(expr, self.current_token.clone(), right));
+            expr = Box::new(Binary::new(expr, op.clone(), right));
         }
 
         expr
@@ -147,8 +155,9 @@ impl<'a> Parser<'a> {
     
     fn unary(&mut self) -> Box<dyn Expr<String>> {
         if self.match_token(TokenType::MINUS) || self.match_token(TokenType::EXCLAMATION) {
+            let op = self.current_token.clone();
             let right = self.unary();
-            Box::new(Unary::new(self.current_token.clone(), right))
+            Box::new(Unary::new(op.clone(), right))
         } else {
             self.primary()
         }
@@ -167,7 +176,8 @@ impl<'a> Parser<'a> {
             self.consume(TokenType::RPAREN, "Expect ')' after expression.");
             Box::new(Grouping::new(expr))
         } else {
-            Box::new(Literal::new(Box::new("ILLEGAL".to_string())))
+            error!("ILLEGAL TOKEN: {}", self.lexer.peek().unwrap().lexeme);
+            Box::new(Literal::new(Box::new("ILLEGAL")))
         }
     }
 }

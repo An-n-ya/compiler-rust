@@ -7,12 +7,12 @@ use super::expr::Grouping;
 use super::token::Token;
 use super::token::TokenType;
 
-struct AstPrinter { }
+pub struct AstPrinter { }
 
 impl Visitor<String> for AstPrinter {
 
     fn visit_binary(&mut self, expr: &Binary<String>) -> String {
-        self.parenthesize(expr.op.lexeme.clone(), vec![expr.left.as_ref(), expr.right.as_ref()])
+        self.parenthesize(format!("{}" , expr.op.lexeme.clone()), vec![expr.left.as_ref(), expr.right.as_ref()])
     }
 
     fn visit_grouping(&mut self, expr: &Grouping<String>) -> String {
@@ -36,7 +36,7 @@ impl Visitor<String> for AstPrinter {
 }
 
 impl AstPrinter {
-    fn new() -> AstPrinter {
+    pub fn new() -> AstPrinter {
         AstPrinter { }
     }
     
@@ -71,6 +71,7 @@ mod tests {
         );
         let mut printer = AstPrinter::new();
         let result = expr.accept(&mut printer);
+        println!("{}", result);
         assert_eq!(result, "(* (- 123) (group 45.67))");
     }
     
