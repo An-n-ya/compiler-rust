@@ -60,6 +60,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = self.lexer.peek() {
             if token.token_type == token_type {
                 self.current_token = token.clone();
+                self.lexer.next();
                 // 这里不能用next
                 return;
             } else {
@@ -177,7 +178,140 @@ impl<'a> Parser<'a> {
             Box::new(Grouping::new(expr))
         } else {
             error!("ILLEGAL TOKEN: {}", self.lexer.peek().unwrap().lexeme);
+            self.lexer.next();
             Box::new(Literal::new(Box::new("ILLEGAL")))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::iter::zip;
+
+    use crate::compiler_core::visitors::AstPrinter;
+
+    use super::*;
+
+    #[test]
+    fn equality_test() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "1 == 2",
+            "1 != 2",
+        ];
+        let expects = [
+            "(== 1 2)",
+            "(!= 1 2)",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
+    }
+    #[test]
+    fn comparison_test() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "1 > 2",
+            "1 >= 2",
+            "1 < 2",
+            "1 <= 2",
+        ];
+        let expects = [
+            "(> 1 2)",
+            "(>= 1 2)",
+            "(< 1 2)",
+            "(<= 1 2)",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
+    }
+    #[test]
+    fn addition_test() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "1 + 2",
+            "1 - 2",
+        ];
+        let expects = [
+            "(+ 1 2)",
+            "(- 1 2)",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
+    }
+    #[test]
+    fn multiplication_test() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "1 * 2",
+            "1 / 2",
+        ];
+        let expects = [
+            "(* 1 2)",
+            "(/ 1 2)",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
+    }
+    #[test]
+    fn unary() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "-5",
+            "!true",
+        ];
+        let expects = [
+            "(- 5)",
+            "(! TRUE)",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
+    }
+    #[test]
+    fn literal() {
+        let mut printer = AstPrinter::new();
+        let inputs = [
+            "true",
+            "false",
+            "null",
+            "3.14",
+            "\"hello world\"",
+            "(1 + 3) * 2",
+            "((1 + 1))"
+        ];
+        let expects = [
+            "TRUE",
+            "FALSE",
+            "NULL",
+            "3.14",
+            "hello world",
+            "(* (group (+ 1 3)) 2)",
+            "(group (group (+ 1 1)))",
+        ];
+        for (input, expect) in zip(inputs.iter(), expects.iter()) {
+            let mut parser = Parser::new(input);
+            let expr = parser.parse();
+            let result = expr.accept(&mut printer);
+            assert_eq!(result, expect.to_string());
+        } 
     }
 }

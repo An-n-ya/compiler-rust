@@ -219,7 +219,6 @@ mod tests {
             Token::new(TokenType::RETURN, "RETURN".to_string(), 1),
             Token::new(TokenType::LET, "LET".to_string(), 1),
             Token::new(TokenType::FUNCTION, "FUNCTION".to_string(), 1)
-
         ];
         for expect in expects {
             assert_eq!(lexer.next().unwrap(), expect);
