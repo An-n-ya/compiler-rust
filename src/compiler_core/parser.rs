@@ -11,6 +11,14 @@ use std::iter::Peekable;
 use std::rc::Rc;
 use std::sync::Arc;
 
+macro_rules! error {
+    ($($arg:tt)*) => {
+        println!("\x1b[31m{}\x1b[0m", format_args!($($arg)*));
+    }
+}
+
+
+
 pub struct Parser<'a>{
     lexer: Peekable<Lexer<'a>>,
     current_token: Token
@@ -50,6 +58,44 @@ impl<'a> Parser<'a> {
         }
     }
     
+    // 消费当前token，如果当前token不是token_type，就panic
+    fn consume(&mut self, token_type: TokenType, message: &str) {
+        if self.current_token.token_type == token_type {
+            self.lexer.next();
+        } else {
+            error!("line {}: at {} line {}", self.current_token.line, self.current_token.lexeme, message);
+        }
+    }
+    
+    // 当发生错误的时候，为了避免导致后面的token也出现语法错误，需要同步到下一个语句的开始
+    fn synchronize(&mut self) {
+        self.lexer.next();
+        
+        while let Some(token) = self.lexer.peek() {
+            // 跳过分号前的所有token 
+            if token.token_type == TokenType::SEMICOLON {
+                return;
+            }
+            
+            // 跳过语句前的所有token
+            match token.token_type {
+                TokenType::CLASS
+                | TokenType::FUNCTION 
+                | TokenType::LET 
+                | TokenType::FOR 
+                | TokenType::IF 
+                | TokenType::WHILE 
+                | TokenType::PRINT 
+                | TokenType::RETURN => {
+                    return;
+                }
+                _ => {}
+            }
+            
+            self.lexer.next();
+        } 
+    }
+
     fn expression(&mut self) -> Box<dyn Expr<String>> {
         self.equality()
     }
@@ -117,7 +163,8 @@ impl<'a> Parser<'a> {
             Box::new(Literal::new(Box::new(self.current_token.lexeme.clone())))
         } else if self.match_token(TokenType::LPAREN) {
             let expr = self.expression();
-            self.match_token(TokenType::RPAREN);
+            // 检查是否有右括号，并提供报错信息
+            self.consume(TokenType::RPAREN, "Expect ')' after expression.");
             Box::new(Grouping::new(expr))
         } else {
             Box::new(Literal::new(Box::new("ILLEGAL".to_string())))

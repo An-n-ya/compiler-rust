@@ -64,6 +64,7 @@ pub enum TokenType {
     WHILE,
     BREAK,
     NULL,
+    PRINT
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -124,6 +125,7 @@ pub fn loopkup_ident(token: &mut String, line: i32) -> Token {
         ("while", TokenType::WHILE),
         ("break", TokenType::BREAK),
         ("null", TokenType::NULL),
+        ("print", TokenType::PRINT),
     ]);
     match keywords.get(token.as_str()) {
         Some(&tok) => {
